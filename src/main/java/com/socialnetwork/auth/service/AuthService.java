@@ -35,7 +35,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final CaptchaService captchaService;
     private final KafkaProducerService kafkaProducerService;
-    PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
 
     /**

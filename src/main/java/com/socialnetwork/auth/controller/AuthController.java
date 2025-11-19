@@ -76,9 +76,9 @@ public class AuthController {
     }
 
     /**
-     * POST /api/v1/auth/password/recovery - Запрос на восстановление пароля
+     * POST /api/v1/auth/password/recovery/ - Запрос на восстановление пароля
      */
-    @PostMapping("/password/recovery")
+    @PostMapping("/password/recovery/")
     public ResponseEntity<String> recoverPassword(@Valid @RequestBody RecoveryPasswordLinkRq request) {
         log.info("Password recovery endpoint called for email: {}", request.getEmail());
         String result = authService.sendPasswordRecoveryLink(request);
