@@ -26,14 +26,15 @@ public class CaptchaService {
      * Генерация новой капчи
      */
     public CaptchaDto generateCaptcha() {
-        String secret = generateRandomCode(6);
-        String imageBase64 = generateCaptchaImage(secret);
+        String code = generateRandomCode(6);           // именно код, который введёт пользователь
+        String imageBase64 = generateCaptchaImage(code);
 
-        // Сохранение секретного кода в хранилище (в будущем использовать редис)
-        captchaStorage.put(secret, imageBase64);
+        // TODO: добавить redis или другой внешний сторедж с TTL для хранения капчи
+        // Сохраняем факт существования такого кода (значение нам не важно, главное — наличие)
+        captchaStorage.put(code, "1");
 
         return CaptchaDto.builder()
-                .secret(secret)
+                .secret(code)      // контракт не меняем: «secret» = сам код
                 .image(imageBase64)
                 .build();
     }
@@ -46,20 +47,21 @@ public class CaptchaService {
             return false;
         }
 
+        // Если такой код был и ещё не использован — удаляем и считаем капчу валидной (одноразовая)
         String stored = captchaStorage.remove(captchaCode);
-        return stored != null && stored.equals(captchaCode);
+        return stored != null;
     }
 
     /**
      * Генерация случайного кода
      */
-    private String generateRandomCode(int lenght) {
+    private String generateRandomCode(int length) {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         StringBuilder code = new StringBuilder();
-        for (int i = 0; i < lenght; i++) {
+        for (int i = 0; i < length; i++) {
             code.append(chars.charAt(random.nextInt(chars.length())));
         }
-        return  code.toString();
+        return code.toString();
     }
 
     /**

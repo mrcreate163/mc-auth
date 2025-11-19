@@ -31,3 +31,4 @@ public class RegistrationDto {
     @NotBlank(message = "Код капчи обязательно")
     private String captchaCode;
 }
+
