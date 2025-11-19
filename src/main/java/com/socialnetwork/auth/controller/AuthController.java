@@ -37,11 +37,14 @@ public class AuthController {
         return ResponseEntity.ok(tokens);
     }
 
-    @PostMapping("/validate")
-    public ResponseEntity<ValidationResponse> validateToken(@Valid @RequestBody ValidateTokenRequest dto) {
+    @GetMapping("/validate")
+    public ResponseEntity<Boolean> validateToken(@RequestParam("token") String token) {
         log.info("Validate token endpoint called");
+        ValidateTokenRequest dto = ValidateTokenRequest.builder()
+                .token(token)
+                .build();
         ValidationResponse response = authService.validateToken(dto);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(response.isValid());
     }
 
     @PostMapping("/refresh")

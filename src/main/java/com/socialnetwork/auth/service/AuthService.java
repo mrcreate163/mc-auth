@@ -128,7 +128,7 @@ public class AuthService {
 
             return ValidationResponse.builder()
                     .valid(true)
-                    .userId(UUID.fromString(claims.get("userid", String.class)))
+                    .userId(UUID.fromString(claims.get("userId", String.class)))
                     .email(claims.get("email", String.class))
                     .build();
         } catch (Exception e) {
