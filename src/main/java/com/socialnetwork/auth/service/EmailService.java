@@ -17,12 +17,15 @@ public class EmailService {
     @Value("${spring.mail.username:noreply@socialnetwork.com}")
     private String fromEmail;
 
+    @Value("${app.base-url:http://localhost:8081}")
+    private String baseUrl;
+
     /**
      * Отправка email для восстановления пароля
      */
     public void sendPasswordResetEmail(String toEmail, String token) {
         try {
-            String resetLink = "http://localhost:8081/api/v1/auth/change-password-link?token=" + token;
+            String resetLink = baseUrl + "/api/v1/auth/change-password-link?token=" + token;
             
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -49,7 +52,7 @@ public class EmailService {
      */
     public void sendEmailChangeConfirmation(String toEmail, String token) {
         try {
-            String confirmLink = "http://localhost:8081/api/v1/auth/confirm-email-change?token=" + token;
+            String confirmLink = baseUrl + "/api/v1/auth/confirm-email-change?token=" + token;
             
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);

@@ -1,7 +1,6 @@
 package com.socialnetwork.auth.controller;
 
 import com.socialnetwork.auth.dto.request.*;
-import com.socialnetwork.auth.dto.request.ConfirmEmailChangeRequest;
 import com.socialnetwork.auth.dto.response.CaptchaDto;
 import com.socialnetwork.auth.dto.response.TokenResponse;
 import com.socialnetwork.auth.dto.response.ValidationResponse;
