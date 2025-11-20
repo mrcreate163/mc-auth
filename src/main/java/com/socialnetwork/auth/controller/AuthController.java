@@ -1,6 +1,7 @@
 package com.socialnetwork.auth.controller;
 
 import com.socialnetwork.auth.dto.request.*;
+import com.socialnetwork.auth.dto.request.ConfirmEmailChangeRequest;
 import com.socialnetwork.auth.dto.response.CaptchaDto;
 import com.socialnetwork.auth.dto.response.TokenResponse;
 import com.socialnetwork.auth.dto.response.ValidationResponse;
@@ -58,10 +59,18 @@ public class AuthController {
      * POST /api/v1/auth/logout - Выход из системы
      */
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@RequestHeader("X-User-Id") String userIdStr) {
+    public ResponseEntity<String> logout(@RequestHeader("X-User-Id") String userIdStr,
+                                         @RequestHeader(value = "Authorization", required = false) String authHeader) {
         log.info("Logout endpoint called for user: {}", userIdStr);
         UUID userId = UUID.fromString(userIdStr);
-        String result = authService.logout(userId);
+        
+        // Извлечь access token из заголовка Authorization
+        String accessToken = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            accessToken = authHeader.substring(7);
+        }
+        
+        String result = authService.logout(userId, accessToken);
         return ResponseEntity.ok(result);
     }
 
@@ -99,9 +108,24 @@ public class AuthController {
      * POST /api/v1/auth/change-email-link - Запрос на изменение email
      */
     @PostMapping("/change-email-link")
-    public ResponseEntity<String> changeEmail(@Valid @RequestBody ChangeEmailRequest request) {
-        log.info("Change email endpoint called to: {}", request.getNewEmail());
-        String result = authService.sendChangeEmailLink(request);
+    public ResponseEntity<String> changeEmail(@RequestHeader("X-User-Id") String userIdStr,
+                                               @Valid @RequestBody ChangeEmailRequest request) {
+        log.info("Change email endpoint called to: {} for user: {}", request.getNewEmail(), userIdStr);
+        UUID userId = UUID.fromString(userIdStr);
+        String result = authService.sendChangeEmailLink(userId, request);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * GET /api/v1/auth/confirm-email-change - Подтверждение изменения email
+     */
+    @GetMapping("/confirm-email-change")
+    public ResponseEntity<String> confirmEmailChange(@RequestParam("token") String token) {
+        log.info("Confirm email change endpoint called");
+        ConfirmEmailChangeRequest request = ConfirmEmailChangeRequest.builder()
+                .token(token)
+                .build();
+        String result = authService.confirmEmailChange(request);
         return ResponseEntity.ok(result);
     }
 }

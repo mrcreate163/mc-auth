@@ -32,6 +32,24 @@ spring:
       properties:
         spring.json.type.mapping: userRegistered:com.socialnetwork.auth.dto.kafka.UserRegisteredEvent
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 60000
+
+  mail:
+    host: localhost
+    port: 1025
+    username: 
+    password: 
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
 jwt:
   secret: bXlTZWNyZXRLZXlGb3JKV1RUb2tlbkdlbmVyYXRpb25NaW5pbXVtMjU2Qml0c0xvbmdCYXNlNjRFbmNvZGVkPT0=
   access-token-expiration: 900000      # 15 минут
