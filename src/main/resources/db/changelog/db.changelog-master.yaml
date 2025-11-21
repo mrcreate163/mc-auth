@@ -5,3 +5,5 @@ databaseChangeLog:
         file: db/changelog/v1/002-create-refresh-tokens-table.yaml
   - include:
         file: db/changelog/v1/003-create-password-reset-tokens-table.yaml
+  - include:
+        file: db/changelog/v1/004-create-email-change-tokens-table.yaml

@@ -39,5 +39,22 @@ services:
       # Отключить попытки ZooKeeper
       KAFKA_ZOOKEEPER_CONNECT: ""
 
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: auth-mailhog
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+
 volumes:
   postgres-data:
+  redis-data:

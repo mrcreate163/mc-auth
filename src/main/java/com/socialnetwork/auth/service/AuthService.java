@@ -1,9 +1,11 @@
 package com.socialnetwork.auth.service;
 
+import com.socialnetwork.auth.dto.kafka.AccountChangedEvent;
 import com.socialnetwork.auth.dto.kafka.UserRegisteredEvent;
 import com.socialnetwork.auth.dto.request.*;
 import com.socialnetwork.auth.dto.response.TokenResponse;
 import com.socialnetwork.auth.dto.response.ValidationResponse;
+import com.socialnetwork.auth.entity.EmailChangeToken;
 import com.socialnetwork.auth.entity.PasswordResetToken;
 import com.socialnetwork.auth.entity.RefreshToken;
 import com.socialnetwork.auth.entity.User;
@@ -11,6 +13,7 @@ import com.socialnetwork.auth.exception.CaptchaValidationException;
 import com.socialnetwork.auth.exception.InvalidCredentialsException;
 import com.socialnetwork.auth.exception.InvalidTokenException;
 import com.socialnetwork.auth.exception.UserAlreadyExistsExcpetion;
+import com.socialnetwork.auth.repository.EmailChangeTokenRepository;
 import com.socialnetwork.auth.repository.PasswordResetTokenRepository;
 import com.socialnetwork.auth.repository.RefreshTokenRepository;
 import com.socialnetwork.auth.repository.UserRepository;
@@ -36,6 +39,9 @@ public class AuthService {
     private final CaptchaService captchaService;
     private final KafkaProducerService kafkaProducerService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
+    private final EmailChangeTokenRepository emailChangeTokenRepository;
+    private final TokenBlacklistService tokenBlacklistService;
 
 
     /**
@@ -124,6 +130,14 @@ public class AuthService {
      */
     public ValidationResponse validateToken(ValidateTokenRequest request) {
         try {
+            // Проверить, не находится ли токен в черном списке
+            if (tokenBlacklistService.isTokenBlacklisted(request.getToken())) {
+                log.warn("Token is blacklisted");
+                return ValidationResponse.builder()
+                        .valid(false)
+                        .build();
+            }
+
             Claims claims = jwtService.validateAndExtractClaims(request.getToken());
 
             return ValidationResponse.builder()
@@ -175,12 +189,33 @@ public class AuthService {
     }
 
     /**
-     * Выход пользователя - отзыв всех refresh токенов
+     * Выход пользователя - отзыв всех refresh токенов и добавление access токена в blacklist
      */
     @Transactional
-    public String logout(UUID userId) {
+    public String logout(UUID userId, String accessToken) {
         // Отзыв всех refresh токенов пользователя
         refreshTokenRepository.revokeAllUserTokens(userId);
+        
+        // Добавить access токен в черный список, если он предоставлен
+        if (accessToken != null && !accessToken.isEmpty()) {
+            try {
+                // Получить время истечения токена из его claims
+                Claims claims = jwtService.validateAndExtractClaims(accessToken);
+                long expirationTime = claims.getExpiration().getTime();
+                long currentTime = System.currentTimeMillis();
+                long ttl = expirationTime - currentTime;
+                
+                // Добавить в blacklist только если токен еще не истек
+                if (ttl > 0) {
+                    tokenBlacklistService.blacklistToken(accessToken, ttl);
+                    log.info("Access token added to blacklist for user: {}", userId);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
+                // Не прерываем процесс logout, если не удалось добавить в blacklist
+            }
+        }
+        
         return "Logout successful";
     }
 
@@ -206,8 +241,8 @@ public class AuthService {
 
         passwordResetTokenRepository.save(resetToken);
 
-        // TODO: Отправка email с ссылкой для сброса пароля
-        // emailService.sendPasswordResetEmail(user.getEmail(), token);
+        // Отправка email с ссылкой для сброса пароля
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
 
         log.info("Password recovery link sent to email: {}", request.getEmail());
         return "Password recovery link sent";
@@ -253,12 +288,85 @@ public class AuthService {
      * Отправка ссылки для изменения email
      */
     @Transactional
-    public String sendChangeEmailLink(ChangeEmailRequest request) {
-        // TODO: Реализовать логику подтверждения нового email
-        // Аналогично восстановлению пароля, но с отправкой события в Kafka
+    public String sendChangeEmailLink(UUID userId, ChangeEmailRequest request) {
+        log.info("Change email requested to: {} for user: {}", request.getNewEmail(), userId);
 
-        log.info("Change email requested to: {}", request.getNewEmail());
+        // Найти пользователя
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
+
+        // Проверить, не занят ли новый email
+        if (userRepository.existsByEmail(request.getNewEmail())) {
+            throw new UserAlreadyExistsExcpetion("Email is already in use");
+        }
+
+        // Генерация токена для подтверждения смены email
+        String token = UUID.randomUUID().toString();
+
+        EmailChangeToken changeToken = EmailChangeToken.builder()
+                .token(token)
+                .user(user)
+                .newEmail(request.getNewEmail())
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .isUsed(false)
+                .build();
+
+        emailChangeTokenRepository.save(changeToken);
+
+        // Отправка email с ссылкой для подтверждения
+        emailService.sendEmailChangeConfirmation(request.getNewEmail(), token);
+
+        log.info("Email change confirmation link sent to: {}", request.getNewEmail());
         return "Ссылка для подтверждения нового email отправлена";
+    }
+
+    /**
+     * Подтверждение изменения email по токену
+     */
+    @Transactional
+    public String confirmEmailChange(ConfirmEmailChangeRequest request) {
+        log.info("Attempting to confirm email change with token: {}", request.getToken());
+
+        // Найти токен изменения email
+        EmailChangeToken changeToken = emailChangeTokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new InvalidTokenException("Invalid token"));
+
+        // Проверки
+        if (changeToken.getIsUsed()) {
+            throw new InvalidTokenException("Token is already used");
+        }
+        if (changeToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidTokenException("Token is expired");
+        }
+
+        // Проверить, не занят ли новый email (на случай если кто-то успел зарегистрироваться)
+        if (userRepository.existsByEmail(changeToken.getNewEmail())) {
+            throw new UserAlreadyExistsExcpetion("Email is already in use");
+        }
+
+        // Изменить email пользователя
+        User user = changeToken.getUser();
+        String oldEmail = user.getEmail();
+        user.setEmail(changeToken.getNewEmail());
+        userRepository.save(user);
+
+        // Отметить токен как использованный
+        changeToken.setIsUsed(true);
+        emailChangeTokenRepository.save(changeToken);
+
+        // Отозвать все refresh токены пользователя
+        refreshTokenRepository.revokeAllUserTokens(user.getId());
+
+        // Отправить событие в Kafka о смене email
+        AccountChangedEvent accountChangedEvent = AccountChangedEvent.builder()
+                .userId(user.getId())
+                .newEmail(user.getEmail())
+                .changedAt(LocalDateTime.now())
+                .build();
+        kafkaProducerService.sendAccountChangedEvent(accountChangedEvent);
+
+        log.info("Email changed successfully from {} to {} for user: {}", oldEmail, user.getEmail(), user.getId());
+        return "Email changed successfully";
     }
 
 
