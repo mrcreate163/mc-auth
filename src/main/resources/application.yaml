@@ -62,3 +62,14 @@ logging:
   level:
     com.socialnetwork.auth: DEBUG
     org.springframework.security: DEBUG
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    display-request-duration: true
+    doc-expansion: none
+  show-actuator: false
