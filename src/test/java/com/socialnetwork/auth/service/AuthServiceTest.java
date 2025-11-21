@@ -285,9 +285,10 @@ class AuthServiceTest {
     void testLogout_shouldRevokeAllUserTokens() {
         // Given
         UUID userId = testUser.getId();
+        String accessToken = "sampleAccessToken";
 
         // When
-        String result = authService.logout(userId);
+        String result = authService.logout(userId, accessToken);
 
         // Then
         assertEquals("Logout successful", result);
