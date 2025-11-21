@@ -168,7 +168,8 @@ public class AuthController {
      */
     @Operation(
             summary = "Выход из системы",
-            description = "Завершает сеанс пользователя, инвалидирует refresh токен и добавляет access токен в черный список"
+            description = "Завершает сеанс пользователя, инвалидирует все refresh токены. " +
+                         "Опционально принимает access токен для добавления в черный список (blacklist) до истечения срока его действия."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -186,7 +187,8 @@ public class AuthController {
     public ResponseEntity<String> logout(
             @Parameter(description = "ID пользователя", required = true, example = "550e8400-e29b-41d4-a716-446655440000")
             @RequestHeader("X-User-Id") String userIdStr,
-            @Parameter(description = "JWT токен в формате Bearer", example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+            @Parameter(description = "JWT токен в формате Bearer (опционально). Если указан, будет добавлен в blacklist", 
+                      example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         log.info("Logout endpoint called for user: {}", userIdStr);
         UUID userId = UUID.fromString(userIdStr);
