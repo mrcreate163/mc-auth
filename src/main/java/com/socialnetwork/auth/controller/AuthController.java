@@ -23,6 +23,9 @@ public class AuthController {
     private final AuthService authService;
     private final CaptchaService captchaService;
 
+    /**
+     * POST /api/v1/auth/register - Регистрация пользователя
+     */
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegistrationDto dto) {
         log.info("Register endpoint called for email: {}", dto.getEmail());
@@ -30,6 +33,9 @@ public class AuthController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * POST /api/v1/auth/login - Аутентификация пользователя
+     */
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody AuthenticateRq  dto) {
         log.info("Login endpoint called for email: {}", dto.getEmail());
@@ -37,6 +43,9 @@ public class AuthController {
         return ResponseEntity.ok(tokens);
     }
 
+    /**
+     * GET /api/v1/auth/validate - Проверка валидности токена
+     */
     @GetMapping("/validate")
     public ResponseEntity<Boolean> validateToken(@RequestParam("token") String token) {
         log.info("Validate token endpoint called");
@@ -47,6 +56,9 @@ public class AuthController {
         return ResponseEntity.ok(response.isValid());
     }
 
+    /**
+     * POST /api/v1/auth/refresh - Обновление токена
+     */
     @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest dto) {
         log.info("Refresh token endpoint called");

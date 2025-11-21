@@ -30,6 +30,9 @@ public class SecurityConfig {
                         // Все эндпоинты auth публичны
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
+                        // Эндпоинты для Swagger документации публичны
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
                         // Для actuator endpoints (если будут)
                         .requestMatchers("/actuator/**").permitAll()
 
