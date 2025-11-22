@@ -41,8 +41,8 @@ spring:
   mail:
     host: localhost
     port: 1025
-    username: 
-    password: 
+    username: noreply@socialnetwork.com
+    password:
     properties:
       mail:
         smtp:
@@ -73,3 +73,4 @@ springdoc:
     display-request-duration: true
     doc-expansion: none
   show-actuator: false
+
