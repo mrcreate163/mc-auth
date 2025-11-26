@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 
@@ -27,7 +27,7 @@ public class CaptchaService {
     @Value("${captcha.ttl-seconds:300}")
     private long captchaTtlSeconds;
 
-    private static final Random RANDOM = new Random();
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /**
      * Генерация новой капчи
@@ -68,7 +68,7 @@ public class CaptchaService {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         StringBuilder code = new StringBuilder();
         for (int i = 0; i < length; i++) {
-            code.append(chars.charAt(RANDOM.nextInt(chars.length())));
+            code.append(chars.charAt(SECURE_RANDOM.nextInt(chars.length())));
         }
         return code.toString();
     }
@@ -95,10 +95,10 @@ public class CaptchaService {
         //Добавляем шум
         g2d.setColor(Color.GRAY);
         for (int i = 0; i < 5; i++) {
-            int x1 = RANDOM.nextInt(width);
-            int y1 = RANDOM.nextInt(height);
-            int x2 = RANDOM.nextInt(width);
-            int y2 = RANDOM.nextInt(height);
+            int x1 = SECURE_RANDOM.nextInt(width);
+            int y1 = SECURE_RANDOM.nextInt(height);
+            int x2 = SECURE_RANDOM.nextInt(width);
+            int y2 = SECURE_RANDOM.nextInt(height);
             g2d.drawLine(x1, y1, x2, y2);
         }
 
