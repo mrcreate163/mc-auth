@@ -33,6 +33,7 @@ public class User {
     @Column(nullable = false)
     private String password; // Хэшированный пароль BCrypt
 
+    @Builder.Default
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
 

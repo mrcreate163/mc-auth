@@ -58,6 +58,9 @@ jwt:
 app:
   base-url: http://localhost:8081
 
+captcha:
+  ttl-seconds: 300  # 5 минут
+
 logging:
   level:
     com.socialnetwork.auth: DEBUG

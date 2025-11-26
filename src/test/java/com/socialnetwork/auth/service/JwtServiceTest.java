@@ -5,29 +5,25 @@ import com.socialnetwork.auth.exception.InvalidTokenException;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@TestPropertySource(properties = {
-        "jwt.secret=bXlTZWNyZXRLZXlGb3JKV1RUb2tlbkdlbmVyYXRpb25NaW5pbXVtMjU2Qml0c0xvbmdCYXNlNjRFbmNvZGVkPT0=",
-        "jwt.access-token-expiration=900000",
-        "jwt.refresh-token-expiration=2592000000"
-})
 class JwtServiceTest {
 
-    @Autowired
     private JwtService jwtService;
 
     private User testUser;
 
     @BeforeEach
     void setUp() {
+        jwtService = new JwtService();
+        ReflectionTestUtils.setField(jwtService, "secret", "bXlTZWNyZXRLZXlGb3JKV1RUb2tlbkdlbmVyYXRpb25NaW5pbXVtMjU2Qml0c0xvbmdCYXNlNjRFbmNvZGVkPT0=");
+        ReflectionTestUtils.setField(jwtService, "accessTokenExpiration", 900000L);
+        ReflectionTestUtils.setField(jwtService, "refreshTokenExpiration", 2592000000L);
+
         testUser = User.builder()
                 .id(UUID.randomUUID())
                 .email("test@example.com")

@@ -21,21 +21,22 @@ public class RegistrationDto {
     @Email(message = "Некорректный email")
     @NotBlank(message = "Email обязателен")
     private String email;
+
     @Schema(
-            description = "Имя нового пользователя",
+            description = "Имя пользователя",
             example = "Иван",
             required = true
     )
     @NotBlank(message = "Имя обязательно")
-    private String firstname;
+    private String firstName;
 
     @Schema(
-            description = "Фамилия нового пользователя",
-            example = "Сидоров",
+            description = "Фамилия пользователя",
+            example = "Иванов",
             required = true
     )
-    @NotBlank(message = "Фамилия обязательна")
-    private String lastname;
+    @NotBlank(message = "Фамилия обязательно")
+    private String lastName;
 
     @Schema(
             description = "Пароль (минимум 6 символов)",
@@ -54,22 +55,6 @@ public class RegistrationDto {
     )
     @NotBlank(message = "Подтверждение пароля обязательно")
     private String password2;
-
-    @Schema(
-            description = "Имя пользователя",
-            example = "Иван",
-            required = true
-    )
-    @NotBlank(message = "Имя обязательно")
-    private String firstName;
-
-    @Schema(
-            description = "Фамилия пользователя",
-            example = "Иванов",
-            required = true
-    )
-    @NotBlank(message = "Фамилия обязательно")
-    private String lastName;
 
     @Schema(
             description = "Код капчи, полученный из /captcha эндпоинта",

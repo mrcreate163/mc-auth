@@ -31,6 +31,7 @@ public class RefreshToken {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Builder.Default
     @Column(name = "is_revoked")
     private Boolean isRevoked = false; //Отозван ли токен
 
