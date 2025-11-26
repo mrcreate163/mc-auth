@@ -66,6 +66,8 @@ public class AuthService {
 
         // 4. Создание и сохранение пользователя
         User user = User.builder()
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword1()))
                 .isDeleted(false)

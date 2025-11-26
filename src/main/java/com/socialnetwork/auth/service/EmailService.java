@@ -26,7 +26,7 @@ public class EmailService {
     public void sendPasswordResetEmail(String toEmail, String token) {
         try {
             String resetLink = baseUrl + "/api/v1/auth/change-password-link?token=" + token;
-            
+
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);
@@ -53,7 +53,7 @@ public class EmailService {
     public void sendEmailChangeConfirmation(String toEmail, String token) {
         try {
             String confirmLink = baseUrl + "/api/v1/auth/confirm-email-change?token=" + token;
-            
+
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
             message.setTo(toEmail);

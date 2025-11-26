@@ -21,6 +21,21 @@ public class RegistrationDto {
     @Email(message = "Некорректный email")
     @NotBlank(message = "Email обязателен")
     private String email;
+    @Schema(
+            description = "Имя нового пользователя",
+            example = "Иван",
+            required = true
+    )
+    @NotBlank(message = "Имя обязательно")
+    private String firstname;
+
+    @Schema(
+            description = "Фамилия нового пользователя",
+            example = "Сидоров",
+            required = true
+    )
+    @NotBlank(message = "Фамилия обязательна")
+    private String lastname;
 
     @Schema(
             description = "Пароль (минимум 6 символов)",
