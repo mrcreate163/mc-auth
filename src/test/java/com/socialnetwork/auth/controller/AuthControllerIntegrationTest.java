@@ -1,6 +1,7 @@
 package com.socialnetwork.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.socialnetwork.auth.config.TestRedisConfig;
 import com.socialnetwork.auth.dto.request.AuthenticateRq;
 import com.socialnetwork.auth.dto.request.RefreshTokenRequest;
 import com.socialnetwork.auth.dto.request.RegistrationDto;
@@ -10,6 +11,8 @@ import com.socialnetwork.auth.repository.RefreshTokenRepository;
 import com.socialnetwork.auth.repository.UserRepository;
 import com.socialnetwork.auth.service.CaptchaService;
 import com.socialnetwork.auth.service.JwtService;
+import com.socialnetwork.auth.service.KafkaProducerService;
+import com.socialnetwork.auth.service.TokenBlacklistService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
@@ -26,19 +30,24 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestRedisConfig.class)
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.kafka.bootstrap-servers=localhost:9093",
-        "spring.kafka.producer.bootstrap-servers=localhost:9093"
+        "spring.kafka.producer.bootstrap-servers=localhost:9093",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration",
+        "spring.main.allow-bean-definition-overriding=true"
 })
 class AuthControllerIntegrationTest {
 
@@ -63,16 +72,30 @@ class AuthControllerIntegrationTest {
     @MockBean
     private CaptchaService captchaService;
 
+    @MockBean
+    private KafkaProducerService kafkaProducerService;
+
+    @MockBean
+    private TokenBlacklistService tokenBlacklistService;
+
     private User testUser;
 
     @BeforeEach
     void setUp() {
         // Mock captcha validation to always pass
         when(captchaService.validate(anyString())).thenReturn(true);
+        
+        // Mock Kafka producer
+        doNothing().when(kafkaProducerService).sendUserRegisteredEvent(any());
+        
+        // Mock TokenBlacklistService
+        when(tokenBlacklistService.isTokenBlacklisted(anyString())).thenReturn(false);
 
         // Create test user
         testUser = User.builder()
                 .email("test@example.com")
+                .firstName("Test")
+                .lastName("User")
                 .password(passwordEncoder.encode("password123"))
                 .isDeleted(false)
                 .build();

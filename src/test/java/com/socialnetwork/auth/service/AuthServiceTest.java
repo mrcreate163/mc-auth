@@ -12,6 +12,8 @@ import com.socialnetwork.auth.exception.CaptchaValidationException;
 import com.socialnetwork.auth.exception.InvalidCredentialsException;
 import com.socialnetwork.auth.exception.InvalidTokenException;
 import com.socialnetwork.auth.exception.UserAlreadyExistsExcpetion;
+import com.socialnetwork.auth.repository.EmailChangeTokenRepository;
+import com.socialnetwork.auth.repository.PasswordResetTokenRepository;
 import com.socialnetwork.auth.repository.RefreshTokenRepository;
 import com.socialnetwork.auth.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +53,18 @@ class AuthServiceTest {
 
     @Mock
     private KafkaProducerService kafkaProducerService;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private EmailChangeTokenRepository emailChangeTokenRepository;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
 
     @InjectMocks
     private AuthService authService;
@@ -183,6 +197,8 @@ class AuthServiceTest {
                 .token("validToken")
                 .build();
         
+        when(tokenBlacklistService.isTokenBlacklisted(anyString())).thenReturn(false);
+        
         io.jsonwebtoken.Claims claims = mock(io.jsonwebtoken.Claims.class);
         when(claims.get("userId", String.class)).thenReturn(testUser.getId().toString());
         when(claims.get("email", String.class)).thenReturn(testUser.getEmail());
@@ -204,6 +220,7 @@ class AuthServiceTest {
                 .token("invalidToken")
                 .build();
         
+        when(tokenBlacklistService.isTokenBlacklisted(anyString())).thenReturn(false);
         when(jwtService.validateAndExtractClaims(anyString())).thenThrow(new InvalidTokenException("Invalid token"));
 
         // When

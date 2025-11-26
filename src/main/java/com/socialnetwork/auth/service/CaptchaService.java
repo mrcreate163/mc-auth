@@ -1,26 +1,33 @@
 package com.socialnetwork.auth.service;
 
 import com.socialnetwork.auth.dto.response.CaptchaDto;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class CaptchaService {
 
+    private static final String CAPTCHA_PREFIX = "captcha:";
 
-    private final ConcurrentHashMap<String, String> captchaStorage = new ConcurrentHashMap<>();
+    private final RedisTemplate<String, String> redisTemplate;
 
-    private final Random random = new Random();
+    @Value("${captcha.ttl-seconds:300}")
+    private long captchaTtlSeconds;
+
+    private static final Random RANDOM = new Random();
 
     /**
      * Генерация новой капчи
@@ -29,9 +36,10 @@ public class CaptchaService {
         String code = generateRandomCode(6);           // именно код, который введёт пользователь
         String imageBase64 = generateCaptchaImage(code);
 
-        // TODO: добавить redis или другой внешний сторедж с TTL для хранения капчи
-        // Сохраняем факт существования такого кода (значение нам не важно, главное — наличие)
-        captchaStorage.put(code, "1");
+        // Сохраняем капчу в Redis с TTL
+        String key = CAPTCHA_PREFIX + code;
+        redisTemplate.opsForValue().set(key, "1", captchaTtlSeconds, TimeUnit.SECONDS);
+        log.debug("Captcha code saved to Redis with TTL {} seconds", captchaTtlSeconds);
 
         return CaptchaDto.builder()
                 .secret(code)      // контракт не меняем: «secret» = сам код
@@ -48,8 +56,9 @@ public class CaptchaService {
         }
 
         // Если такой код был и ещё не использован — удаляем и считаем капчу валидной (одноразовая)
-        String stored = captchaStorage.remove(captchaCode);
-        return stored != null;
+        String key = CAPTCHA_PREFIX + captchaCode;
+        Boolean deleted = redisTemplate.delete(key);
+        return deleted != null && deleted;
     }
 
     /**
@@ -59,7 +68,7 @@ public class CaptchaService {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         StringBuilder code = new StringBuilder();
         for (int i = 0; i < length; i++) {
-            code.append(chars.charAt(random.nextInt(chars.length())));
+            code.append(chars.charAt(RANDOM.nextInt(chars.length())));
         }
         return code.toString();
     }
@@ -86,10 +95,10 @@ public class CaptchaService {
         //Добавляем шум
         g2d.setColor(Color.GRAY);
         for (int i = 0; i < 5; i++) {
-            int x1 = random.nextInt(width);
-            int y1 = random.nextInt(height);
-            int x2 = random.nextInt(width);
-            int y2 = random.nextInt(height);
+            int x1 = RANDOM.nextInt(width);
+            int y1 = RANDOM.nextInt(height);
+            int x2 = RANDOM.nextInt(width);
+            int y2 = RANDOM.nextInt(height);
             g2d.drawLine(x1, y1, x2, y2);
         }
 
