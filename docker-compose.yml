@@ -4,7 +4,7 @@ services:
     container_name: auth-app
     restart: always
     ports:
-      - "${APP_PORT:-8080}:8080" # Используем переменную с дефолтным значением
+      - "${APP_PORT:-8080}:8081" # Внешний порт : внутренний порт (приложение слушает 8081)
     environment:
       # Ссылаемся на переменные из .env файла
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
