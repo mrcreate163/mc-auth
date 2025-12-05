@@ -100,3 +100,4 @@ volumes:
 networks:
   default:
     name: social-network-net
+    external: true
