@@ -29,3 +29,13 @@ logging:
     # Для продакшена лучше логировать только INFO и выше, а не DEBUG
     com.socialnetwork.auth: INFO
     org.springframework.security: INFO
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}

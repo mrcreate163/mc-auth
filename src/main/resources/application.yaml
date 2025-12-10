@@ -3,12 +3,12 @@ server:
 
 spring:
   application:
-    name: mc-auth
+    name: auth-service
 
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_db
     username: postgres
-    password: postgres
+    password: xsU0CfoAUB
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -25,7 +25,7 @@ spring:
     enabled: true
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:8090
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -77,3 +77,12 @@ springdoc:
     doc-expansion: none
   show-actuator: false
 
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
