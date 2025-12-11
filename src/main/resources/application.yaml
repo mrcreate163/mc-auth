@@ -6,7 +6,7 @@ spring:
     name: auth-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/auth_db
+    url: jdbc:postgresql://postgres:5432/auth_db
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -25,7 +25,7 @@ spring:
     enabled: true
 
   kafka:
-    bootstrap-servers: localhost:8090
+    bootstrap-servers: kafka:8090
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -34,12 +34,12 @@ spring:
 
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
       timeout: 60000
 
   mail:
-    host: localhost
+    host: mailhog
     port: 1025
     username: noreply@socialnetwork.com
     password:
