@@ -186,9 +186,9 @@ deploy-dev:
           --network social-network-net \
           -p 8081:8081 \
           -e SPRING_PROFILES_ACTIVE=prod \
-          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka \
+          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
           $DEPLOY_IMAGE
-      
+
         echo "🧹 Cleaning up old images..."
         docker image prune -f
 
@@ -236,7 +236,7 @@ deploy-prod:
           --network social-network-net \
           -p 8081:8081 \
           -e SPRING_PROFILES_ACTIVE=prod \
-          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka \
+          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
           $DEPLOY_IMAGE
 
         echo "🧹 Cleaning up old images..."
