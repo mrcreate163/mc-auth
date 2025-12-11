@@ -174,11 +174,11 @@ deploy-dev:
         set -e
         echo "📥 Pulling image: $DEPLOY_IMAGE"
         docker pull $DEPLOY_IMAGE
-      
+
         echo "🛑 Stopping old container..."
         docker stop mc-auth || true
         docker rm mc-auth || true
-      
+
         echo "🚀 Starting new container..."
         docker run -d \
           --name mc-auth \
@@ -186,11 +186,12 @@ deploy-dev:
           --network social-network-net \
           -p 8081:8081 \
           -e SPRING_PROFILES_ACTIVE=prod \
+          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka \
           $DEPLOY_IMAGE
       
         echo "🧹 Cleaning up old images..."
         docker image prune -f
-      
+
         echo "✅ DEV деплой завершён!"
         docker ps | grep mc-auth
       ENDSSH
@@ -223,11 +224,11 @@ deploy-prod:
         set -e
         echo "📥 Pulling image: $DEPLOY_IMAGE"
         docker pull $DEPLOY_IMAGE
-      
+
         echo "🛑 Stopping old container..."
         docker stop mc-auth || true
         docker rm mc-auth || true
-      
+
         echo "🚀 Starting new container..."
         docker run -d \
           --name mc-auth \
@@ -235,11 +236,12 @@ deploy-prod:
           --network social-network-net \
           -p 8081:8081 \
           -e SPRING_PROFILES_ACTIVE=prod \
+          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8761/eureka \
           $DEPLOY_IMAGE
-      
+
         echo "🧹 Cleaning up old images..."
         docker image prune -f
-      
+
         echo "✅ Production деплой завершён!"
         docker ps | grep mc-auth
       ENDSSH
@@ -251,7 +253,6 @@ deploy-prod:
   needs:
     - docker-build
     - unit-tests
-
 # ==================== OPTIONAL JOBS ====================
 
 # Анализ кода (опционально)
