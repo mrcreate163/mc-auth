@@ -184,6 +184,7 @@ deploy-dev:
           --name mc-auth \
           --restart always \
           --network social-network-net \
+          -p 8081:8081 \
           -e SPRING_PROFILES_ACTIVE=prod \
           $DEPLOY_IMAGE
       
@@ -232,6 +233,7 @@ deploy-prod:
           --name mc-auth \
           --restart always \
           --network social-network-net \
+          -p 8081:8081 \
           -e SPRING_PROFILES_ACTIVE=prod \
           $DEPLOY_IMAGE
       
