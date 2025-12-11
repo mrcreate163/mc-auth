@@ -164,7 +164,6 @@ deploy-dev:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - ssh-keyscan -H $DEV_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null
-    # Очищаем переменные
     - export DOCKER_HUB_USER=$(echo "$DOCKER_HUB_USER" | tr -d '\n\r ')
     - export DEPLOY_IMAGE="${DOCKER_HUB_USER}/mc-auth:${CI_COMMIT_SHORT_SHA}"
   script:
@@ -175,26 +174,22 @@ deploy-dev:
         set -e
         echo "📥 Pulling image: $DEPLOY_IMAGE"
         docker pull $DEPLOY_IMAGE
-        
+      
         echo "🛑 Stopping old container..."
         docker stop mc-auth || true
         docker rm mc-auth || true
-        
+      
         echo "🚀 Starting new container..."
         docker run -d \
           --name mc-auth \
           --restart always \
           --network social-network-net \
-          -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/auth_db \
-          -e SPRING_DATASOURCE_USERNAME=postgres \
-          -e SPRING_DATASOURCE_PASSWORD=postgres \
-          -e SPRING_REDIS_HOST=localhost \
           -e SPRING_PROFILES_ACTIVE=prod \
           $DEPLOY_IMAGE
-        
+      
         echo "🧹 Cleaning up old images..."
         docker image prune -f
-        
+      
         echo "✅ DEV деплой завершён!"
         docker ps | grep mc-auth
       ENDSSH
@@ -207,7 +202,6 @@ deploy-dev:
   needs:
     - docker-build
 
-# Деплой на production
 deploy-prod:
   stage: deploy
   image: alpine:latest
@@ -218,7 +212,6 @@ deploy-prod:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - ssh-keyscan -H $DEV_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null
-    # Очищаем переменные
     - export DOCKER_HUB_USER=$(echo "$DOCKER_HUB_USER" | tr -d '\n\r ')
     - export DEPLOY_IMAGE="${DOCKER_HUB_USER}/mc-auth:${CI_COMMIT_SHORT_SHA}"
   script:
@@ -229,26 +222,22 @@ deploy-prod:
         set -e
         echo "📥 Pulling image: $DEPLOY_IMAGE"
         docker pull $DEPLOY_IMAGE
-        
+      
         echo "🛑 Stopping old container..."
         docker stop mc-auth || true
         docker rm mc-auth || true
-        
+      
         echo "🚀 Starting new container..."
         docker run -d \
           --name mc-auth \
           --restart always \
           --network social-network-net \
-          -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/auth_db \
-          -e SPRING_DATASOURCE_USERNAME=postgres \
-          -e SPRING_DATASOURCE_PASSWORD=postgres \
-          -e SPRING_REDIS_HOST=localhost \
           -e SPRING_PROFILES_ACTIVE=prod \
           $DEPLOY_IMAGE
-        
+      
         echo "🧹 Cleaning up old images..."
         docker image prune -f
-        
+      
         echo "✅ Production деплой завершён!"
         docker ps | grep mc-auth
       ENDSSH
