@@ -184,7 +184,7 @@ deploy-dev:
         docker run -d \
           --name mc-auth \
           --restart always \
-          --network host \
+          --network social-network-net \
           -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/auth_db \
           -e SPRING_DATASOURCE_USERNAME=postgres \
           -e SPRING_DATASOURCE_PASSWORD=postgres \
@@ -238,7 +238,7 @@ deploy-prod:
         docker run -d \
           --name mc-auth \
           --restart always \
-          --network host \
+          --network social-network-net \
           -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/auth_db \
           -e SPRING_DATASOURCE_USERNAME=postgres \
           -e SPRING_DATASOURCE_PASSWORD=postgres \
