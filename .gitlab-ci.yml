@@ -1,10 +1,12 @@
 # GitLab CI/CD Pipeline для Auth Microservice
+
 # Документация: https://docs.gitlab.com/ee/ci/yaml/
 
 # Определяем стадии пайплайна
 stages:
   - build
   - test
+  - sonar      # ← ДОБАВЛЕНА НОВАЯ СТАДИЯ
   - package
   - deploy
 
@@ -16,12 +18,16 @@ variables:
   # Docker Hub образ (формат: username/repository)
   DOCKER_IMAGE: $DOCKER_HUB_USER/mc-auth
   IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+  # SonarQube переменные (ДОБАВЛЕНО)
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+  GIT_DEPTH: 0  # Важно для точного анализа истории коммитов
 
 # Кеширование Maven зависимостей между пайплайнами
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - .m2/repository/
+    - .sonar/cache  # ← ДОБАВЛЕН КЕШ ДЛЯ SONARQUBE
 
 # Базовый образ для Java/Maven job'ов
 .maven-job:
@@ -59,6 +65,7 @@ unit-tests:
     when: always
     paths:
       - target/surefire-reports/
+      - target/site/jacoco/  # Добавлено для JaCoCo отчётов
     reports:
       junit:
         - target/surefire-reports/TEST-*.xml
@@ -69,7 +76,6 @@ unit-tests:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH == "develop"
 
-# Опционально: интеграционные тесты с реальными сервисами
 integration-tests:
   extends: .maven-job
   stage: test
@@ -103,11 +109,41 @@ integration-tests:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  allow_failure: true  # Можно убрать когда интеграционные тесты стабильны
+  allow_failure: true
+
+# ==================== SONAR STAGE (НОВАЯ СЕКЦИЯ) ====================
+
+sonarqube-analysis:
+  extends: .maven-job
+  stage: sonar
+  script:
+    - echo "🔍 Запуск SonarQube анализа кода..."
+    - echo "SonarQube Server: ${SONAR_HOST_URL}"
+    - echo "Project Key: ${SONAR_PROJECT_KEY}"
+    - |
+      mvn clean verify sonar:sonar \
+        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+        -Dsonar.projectName="${SONAR_PROJECT_NAME}" \
+        -Dsonar.host.url=${SONAR_HOST_URL} \
+        -Dsonar.token=${SONAR_TOKEN} \
+        -Dsonar.qualitygate.wait=true \
+        -Dsonar.java.binaries=target/classes \
+        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+  allow_failure: false  # Блокировать пайплайн если Quality Gate провален
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "develop"
+  needs:
+    - unit-tests  # Зависимость: выполняется только после успешных тестов
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
 
 # ==================== PACKAGE STAGE ====================
 
-# Сборка JAR артефакта
 package-jar:
   extends: .maven-job
   stage: package
@@ -124,7 +160,6 @@ package-jar:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH == "develop"
 
-# Сборка Docker образа (использует Docker socket хоста)
 docker-build:
   stage: package
   image: docker:24
@@ -132,7 +167,6 @@ docker-build:
     DOCKER_HOST: unix:///var/run/docker.sock
   before_script:
     - echo "🔐 Авторизация в Docker Hub..."
-    # Очищаем переменные от возможных переносов строк
     - export DOCKER_HUB_USER=$(echo "$DOCKER_HUB_USER" | tr -d '\n\r ')
     - export DOCKER_HUB_TOKEN=$(echo "$DOCKER_HUB_TOKEN" | tr -d '\n\r')
     - export CLEAN_IMAGE="${DOCKER_HUB_USER}/mc-auth"
@@ -150,10 +184,11 @@ docker-build:
   needs:
     - job: unit-tests
       artifacts: false
+    - job: sonarqube-analysis  # ← ДОБАВЛЕНА ЗАВИСИМОСТЬ
+      artifacts: false
 
 # ==================== DEPLOY STAGE ====================
 
-# Деплой на dev окружение
 deploy-dev:
   stage: deploy
   image: alpine:latest
@@ -171,32 +206,29 @@ deploy-dev:
     - echo "Deploying image - $DEPLOY_IMAGE"
     - |
       ssh $DEV_SERVER_USER@$DEV_SERVER_HOST << ENDSSH
-        set -e
-        echo "📥 Pulling image: $DEPLOY_IMAGE"
-        docker pull $DEPLOY_IMAGE
-
-        echo "🛑 Stopping old container..."
-        docker stop mc-auth || true
-        docker rm mc-auth || true
-
-        echo "🚀 Starting new container with memory optimization..."
-        docker run -d \
-          --name mc-auth \
-          --restart always \
-          --network social-network-net \
-          -p 8081:8081 \
-          --memory=384m \
-          --memory-reservation=256m \
-          --cpus=1.0 \
-          -e SPRING_PROFILES_ACTIVE=prod \
-          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
-          $DEPLOY_IMAGE
-
-        echo "🧹 Cleaning up old images..."
-        docker image prune -f
-
-        echo "✅ DEV деплой завершён!"
-        docker ps | grep mc-auth
+      set -e
+      echo "📥 Pulling image: $DEPLOY_IMAGE"
+      docker pull $DEPLOY_IMAGE
+      echo "🛑 Stopping old container..."
+      docker stop mc-auth || true
+      docker rm mc-auth || true
+      echo "🚀 Starting new container with memory optimization..."
+      docker run -d \
+        --name mc-auth \
+        --restart always \
+        --network social-network-net \
+        -p 8081:8081 \
+        --memory=384m \
+        --memory-reservation=256m \
+        --cpus=1.0 \
+        -e SPRING_PROFILES_ACTIVE=prod \
+        -e JAVA_OPTS="-Xms128m -Xmx256m" \
+        -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
+        $DEPLOY_IMAGE
+      echo "🧹 Cleaning up old images..."
+      docker image prune -f
+      echo "✅ DEV деплой завершён!"
+      docker ps | grep mc-auth
       ENDSSH
   environment:
     name: development
@@ -224,32 +256,29 @@ deploy-prod:
     - echo "Deploying image - $DEPLOY_IMAGE"
     - |
       ssh $DEV_SERVER_USER@$DEV_SERVER_HOST << ENDSSH
-        set -e
-        echo "📥 Pulling image: $DEPLOY_IMAGE"
-        docker pull $DEPLOY_IMAGE
-
-        echo "🛑 Stopping old container..."
-        docker stop mc-auth || true
-        docker rm mc-auth || true
-
-        echo "🚀 Starting new container with memory optimization..."
-        docker run -d \
-          --name mc-auth \
-          --restart always \
-          --network social-network-net \
-          -p 8081:8081 \
-          --memory=384m \
-          --memory-reservation=256m \
-          --cpus=1.0 \
-          -e SPRING_PROFILES_ACTIVE=prod \
-          -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
-          $DEPLOY_IMAGE
-
-        echo "🧹 Cleaning up old images..."
-        docker image prune -f
-
-        echo "✅ Production деплой завершён!"
-        docker ps | grep mc-auth
+      set -e
+      echo "📥 Pulling image: $DEPLOY_IMAGE"
+      docker pull $DEPLOY_IMAGE
+      echo "🛑 Stopping old container..."
+      docker stop mc-auth || true
+      docker rm mc-auth || true
+      echo "🚀 Starting new container with memory optimization..."
+      docker run -d \
+        --name mc-auth \
+        --restart always \
+        --network social-network-net \
+        -p 8081:8081 \
+        --memory=384m \
+        --memory-reservation=256m \
+        --cpus=1.0 \
+        -e SPRING_PROFILES_ACTIVE=prod \
+        -e JAVA_OPTS="-Xms128m -Xmx256m" \
+        -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
+        $DEPLOY_IMAGE
+      echo "🧹 Cleaning up old images..."
+      docker image prune -f
+      echo "✅ Production деплой завершён!"
+      docker ps | grep mc-auth
       ENDSSH
   environment:
     name: production
@@ -259,28 +288,4 @@ deploy-prod:
   needs:
     - docker-build
     - unit-tests
-# ==================== OPTIONAL JOBS ====================
-
-# Анализ кода (опционально)
-code-quality:
-  extends: .maven-job
-  stage: test
-  script:
-    - echo "📊 Проверка качества кода..."
-    - mvn checkstyle:check || true
-  allow_failure: true
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
-# Сканирование безопасности зависимостей
-dependency-check:
-  extends: .maven-job
-  stage: test
-  script:
-    - echo "🔒 Проверка уязвимостей в зависимостях..."
-    - mvn dependency-check:check || true
-  allow_failure: true
-  rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
-
+    - sonarqube-analysis  # ← ДОБАВЛЕНА ЗАВИСИМОСТЬ
