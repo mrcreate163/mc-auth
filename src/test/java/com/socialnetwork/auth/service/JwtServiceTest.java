@@ -75,9 +75,7 @@ class JwtServiceTest {
         String invalidToken = "invalid.jwt.token";
 
         // When & Then
-        assertThrows(InvalidTokenException.class, () -> {
-            jwtService.validateAndExtractClaims(invalidToken);
-        });
+        assertThrows(InvalidTokenException.class, () -> jwtService.validateAndExtractClaims(invalidToken));
     }
 
     @Test
@@ -151,7 +149,7 @@ class JwtServiceTest {
     void testGeneratedTokensAreDifferent() throws InterruptedException {
         // When
         String token1 = jwtService.generateAccessToken(testUser);
-        // Thread.sleep(1000); // Wait 1 second to ensure different timestamp
+        Thread.sleep(1000); // Wait 1 second to ensure different timestamp
         String token2 = jwtService.generateAccessToken(testUser);
 
         // Then
