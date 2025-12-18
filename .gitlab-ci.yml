@@ -118,24 +118,23 @@ sonarqube-analysis:
   stage: sonar
   script:
     - echo "🔍 Запуск SonarQube анализа кода..."
-    - echo "SonarQube Server: ${SONAR_HOST_URL}"
-    - echo "Project Key: ${SONAR_PROJECT_KEY}"
-    - |
-      mvn clean verify sonar:sonar \
-        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-        -Dsonar.projectName="${SONAR_PROJECT_NAME}" \
-        -Dsonar.host.url=${SONAR_HOST_URL} \
-        -Dsonar.token=${SONAR_TOKEN} \
-        -Dsonar.qualitygate.wait=true \
-        -Dsonar.java.binaries=target/classes \
-        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-  allow_failure: false  # Блокировать пайплайн если Quality Gate провален
+    - echo "SonarQube Server - ${SONAR_HOST_URL}"
+    - echo "Project Key - ${SONAR_PROJECT_KEY}"
+    - mvn clean verify sonar:sonar
+      -Dsonar.projectKey=${SONAR_PROJECT_KEY}
+      -Dsonar.projectName="${SONAR_PROJECT_NAME}"
+      -Dsonar.host.url=${SONAR_HOST_URL}
+      -Dsonar.token=${SONAR_TOKEN}
+      -Dsonar.qualitygate.wait=true
+      -Dsonar.java.binaries=target/classes
+      -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+  allow_failure: false
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH == "develop"
   needs:
-    - unit-tests  # Зависимость: выполняется только после успешных тестов
+    - unit-tests
   retry:
     max: 2
     when:
