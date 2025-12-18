@@ -1,0 +1,91 @@
+# Production конфигурация с оптимизацией памяти
+spring:
+  jpa:
+    show-sql: false  # Отключаем логирование SQL
+    properties:
+      hibernate:
+        format_sql: false
+        # Оптимизация Hibernate для снижения потребления памяти
+        jdbc:
+          batch_size: 20
+          fetch_size: 20
+        order_inserts: true
+        order_updates: true
+        # Ограничение размера кэша второго уровня (если используется)
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+        # Оптимизация connection pool
+        connection:
+          pool_size: 5  # Уменьшаем количество соединений
+
+  datasource:
+    hikari:
+      # Оптимизация HikariCP для микросервиса
+      maximum-pool-size: 5          # Максимум 5 соединений (было по умолчанию 10)
+      minimum-idle: 2               # Минимум 2 простаивающих соединения
+      connection-timeout: 20000     # 20 секунд
+      idle-timeout: 300000          # 5 минут
+      max-lifetime: 1200000         # 20 минут
+      leak-detection-threshold: 60000  # Детектирование утечек соединений
+
+  kafka:
+    producer:
+      # Оптимизация Kafka producer
+      buffer-memory: 16777216       # 16MB (вместо 32MB по умолчанию)
+      batch-size: 8192              # 8KB батчи
+      linger.ms: 10                 # Небольшая задержка для батчинга
+      compression-type: lz4         # Сжатие для экономии памяти
+
+  # Оптимизация Spring MVC
+  mvc:
+    async:
+      request-timeout: 30000        # 30 секунд таймаут
+
+  jackson:
+    # Оптимизация Jackson
+    serialization:
+      INDENT_OUTPUT: false          # Отключаем форматирование JSON
+
+# Оптимизация Tomcat
+server:
+  tomcat:
+    threads:
+      max: 50                       # Максимум 50 потоков (вместо 200)
+      min-spare: 5                  # Минимум 5 потоков
+    max-connections: 1000           # Максимум 1000 соединений
+    accept-count: 50                # Очередь ожидающих соединений
+    connection-timeout: 20000       # 20 секунд таймаут
+  compression:
+    enabled: true                   # Включаем сжатие ответов
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024
+
+# Оптимизация логирования
+logging:
+  level:
+    root: INFO
+    com.socialnetwork.auth: INFO    # Уменьшаем уровень логирования
+    org.springframework: WARN
+    org.springframework.security: WARN
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"  # Упрощенный формат логов
+
+# Отключаем неиспользуемые endpoints actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus    # Только необходимые endpoints
+  endpoint:
+    health:
+      show-details: when-authorized   # Скрываем детали health check
+
+# Оптимизация Swagger только если нужен в prod
+springdoc:
+  swagger-ui:
+    enabled: false                    # Отключаем Swagger UI в production
+  api-docs:
+    enabled: true                     # Оставляем API docs для интеграции

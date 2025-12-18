@@ -1,103 +1,247 @@
 services:
-  auth-app:
-    build: .
-    container_name: auth-app
-    restart: always
-    ports:
-      - "${APP_PORT:-8080}:8081" # Внешний порт : внутренний порт (приложение слушает 8081)
-    environment:
-      # Ссылаемся на переменные из .env файла
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      SPRING_REDIS_HOST: redis
-      SPRING_REDIS_PORT: 6379
-      SPRING_MAIL_HOST: mailhog
-      SPRING_MAIL_PORT: 1025
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      redis:
-        condition: service_started
-      mailhog:
-        condition: service_started
-
   postgres:
-    image: postgres:16
-    container_name: auth-postgres
-    restart: always
+    image: postgres:16-alpine
+    container_name: social-network-postgres
+    restart: unless-stopped
     stop_grace_period: 30s
+    command: postgres -c 'max_connections=300' -c 'shared_buffers=256MB'
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-social_network}
+      POSTGRES_MULTIPLE_DATABASES: auth_db,users_db,posts_db,notifications_db,messages_db
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts/postgres:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    networks:
+      - social-network-net
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: auth-kafka
+    container_name: social-network-kafka
+    restart: unless-stopped
     ports:
       - "${KAFKA_PORT:-9092}:9092"
     environment:
-      CLUSTER_ID: "4L6g3nShT-eMCtK_zJq0Mw"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_INTERNAL://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_ADVERTISED_HOST:-localhost}:${KAFKA_PORT:-9092},PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_ADVERTISED_HOST:-localhost}:${KAFKA_PORT:-9092},INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - social-network-net
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: auth-kafka-ui
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: social-network-kafka-ui
+    restart: unless-stopped
     ports:
       - "${KAFKA_UI_PORT:-8090}:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_NAME: social-network
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       DYNAMIC_CONFIG_ENABLED: 'true'
+      AUTH_TYPE: "DISABLED"
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+    networks:
+      - social-network-net
 
   redis:
     image: redis:7-alpine
-    container_name: auth-redis
+    container_name: social-network-redis
+    restart: unless-stopped
     ports:
       - "${REDIS_PORT:-6379}:6379"
-    command: redis-server --appendonly yes
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - social-network-net
 
   mailhog:
-    image: mailhog/mailhog:latest
-    container_name: auth-mailhog
+    image: mailhog/mailhog:v1.0.1
+    container_name: social-network-mailhog
+    restart: unless-stopped
     ports:
       - "${MAILHOG_SMTP_PORT:-1025}:1025"
       - "${MAILHOG_WEB_PORT:-8025}:8025"
+    environment:
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /maildir
+    volumes:
+      - mailhog-data:/maildir
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - social-network-net
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - social-network-net
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    networks:
+      - social-network-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: social-network-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - social-network-net
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: social-network-postgres-exporter
+    restart: unless-stopped
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-social_network}?sslmode=disabl>
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - social-network-net
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: social-network-redis-exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - social-network-net
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: social-network-kafka-exporter
+    restart: unless-stopped
+    ports:
+      - "9308:9308"
+    command:
+      - '--kafka.server=kafka:29092'
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - social-network-net
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    depends_on:
+      - postgres
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonarqube
+      SONAR_JDBC_USERNAME: postgres
+      SONAR_JDBC_PASSWORD: postgres
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - social-network-net
+    restart: always
 
 volumes:
   postgres-data:
+    driver: local
+    name: social-network-postgres-data
+  kafka-data:
+    driver: local
+    name: social-network-kafka-data
   redis-data:
+    driver: local
+    name: social-network-redis-data
+  mailhog-data:
+    driver: local
+    name: social-network-mailhog-data
+  prometheus-data:
+    driver: local
+    name: social-network-prometheus-data
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
 
 networks:
-  default:
+  social-network-net:
+    driver: bridge
     name: social-network-net
-    external: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16

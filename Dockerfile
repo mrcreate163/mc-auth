@@ -31,5 +31,23 @@ COPY --from=build /app/target/*.jar app.jar
 # Указываем порт, который слушает ваше приложение
 EXPOSE 8081
 
-# Команда для запуска приложения при старте контейнера
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Команда для запуска приложения с оптимизированными JVM параметрами
+# Параметры памяти:
+# -Xms128m -Xmx256m: ограничение heap памяти
+# -XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=128m: ограничение metaspace
+# -XX:+UseSerialGC: экономный сборщик мусора для микросервисов
+# -XX:TieredStopAtLevel=1: отключение агрессивной JIT-компиляции
+# -Xss256k: уменьшение стека потоков
+# -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0: поддержка контейнеров
+ENTRYPOINT ["java", \
+    "-Xms128m", \
+    "-Xmx256m", \
+    "-XX:MetaspaceSize=64m", \
+    "-XX:MaxMetaspaceSize=128m", \
+    "-XX:+UseSerialGC", \
+    "-XX:TieredStopAtLevel=1", \
+    "-Xss256k", \
+    "-XX:+UseContainerSupport", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-Djava.security.egd=file:/dev/./urandom", \
+    "-jar", "app.jar"]

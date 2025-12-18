@@ -179,12 +179,15 @@ deploy-dev:
         docker stop mc-auth || true
         docker rm mc-auth || true
 
-        echo "🚀 Starting new container..."
+        echo "🚀 Starting new container with memory optimization..."
         docker run -d \
           --name mc-auth \
           --restart always \
           --network social-network-net \
           -p 8081:8081 \
+          --memory=384m \
+          --memory-reservation=256m \
+          --cpus=1.0 \
           -e SPRING_PROFILES_ACTIVE=prod \
           -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
           $DEPLOY_IMAGE
@@ -229,12 +232,15 @@ deploy-prod:
         docker stop mc-auth || true
         docker rm mc-auth || true
 
-        echo "🚀 Starting new container..."
+        echo "🚀 Starting new container with memory optimization..."
         docker run -d \
           --name mc-auth \
           --restart always \
           --network social-network-net \
           -p 8081:8081 \
+          --memory=384m \
+          --memory-reservation=256m \
+          --cpus=1.0 \
           -e SPRING_PROFILES_ACTIVE=prod \
           -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
           $DEPLOY_IMAGE
