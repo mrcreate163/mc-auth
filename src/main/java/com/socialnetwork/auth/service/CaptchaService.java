@@ -58,7 +58,7 @@ public class CaptchaService {
         // Если такой код был и ещё не использован — удаляем и считаем капчу валидной (одноразовая)
         String key = CAPTCHA_PREFIX + captchaCode;
         Boolean deleted = redisTemplate.delete(key);
-        return deleted != null && deleted;
+        return Boolean.TRUE.equals(deleted);
     }
 
     /**

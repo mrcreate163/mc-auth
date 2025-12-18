@@ -15,8 +15,7 @@ public class ChangePasswordRequest {
 
     @Schema(
             description = "Токен восстановления пароля из письма",
-            example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-            required = true
+            example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
     )
     @NotBlank(message = "Токен не может быть пустым")
     private String token;
@@ -24,7 +23,6 @@ public class ChangePasswordRequest {
     @Schema(
             description = "Новый пароль (минимум 6 символов)",
             example = "newSecurePassword456",
-            required = true,
             minLength = 6
     )
     @NotBlank(message = "Новый пароль не может быть пустым")

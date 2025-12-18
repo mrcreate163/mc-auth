@@ -15,8 +15,7 @@ public class RecoveryPasswordLinkRq {
 
     @Schema(
             description = "Email адрес для отправки ссылки восстановления пароля",
-            example = "user@example.com",
-            required = true
+            example = "user@example.com"
     )
     @Email(message = "Некорректный формат email")
     @NotBlank(message = "Email не может быть пустым")

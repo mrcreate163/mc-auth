@@ -40,7 +40,7 @@ class JwtServiceTest {
         // Then
         assertNotNull(token);
         assertFalse(token.isEmpty());
-        assertTrue(token.split("\\.").length == 3); // JWT has 3 parts
+        assertEquals(3, token.split("\\.").length); // JWT has 3 parts
     }
 
     @Test
@@ -51,7 +51,7 @@ class JwtServiceTest {
         // Then
         assertNotNull(token);
         assertFalse(token.isEmpty());
-        assertTrue(token.split("\\.").length == 3);
+        assertEquals(3, token.split("\\.").length);
     }
 
     @Test
@@ -151,7 +151,7 @@ class JwtServiceTest {
     void testGeneratedTokensAreDifferent() throws InterruptedException {
         // When
         String token1 = jwtService.generateAccessToken(testUser);
-        Thread.sleep(1000); // Wait 1 second to ensure different timestamp
+        // Thread.sleep(1000); // Wait 1 second to ensure different timestamp
         String token2 = jwtService.generateAccessToken(testUser);
 
         // Then

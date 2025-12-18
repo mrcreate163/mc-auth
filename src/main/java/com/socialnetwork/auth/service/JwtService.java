@@ -22,6 +22,9 @@ import java.util.UUID;
 @Slf4j
 public class JwtService {
 
+    private final static String USER_ID = "userId";
+    private final static String EMAIL = "email";
+
     @Value("${jwt.secret}")
     private String secret;
 
@@ -36,8 +39,8 @@ public class JwtService {
      */
     public String generateAccessToken(User user) {
         Map<String, Object> claims = Map.of(
-                "userId", user.getId().toString(),
-                "email", user.getEmail()
+                USER_ID, user.getId().toString(),
+                EMAIL, user.getEmail()
         );
         return Jwts.builder()
                 .setClaims(claims)
@@ -53,7 +56,7 @@ public class JwtService {
      */
     public String generateRefreshToken(User user) {
         Map<String, Object> claims = Map.of(
-                "userId", user.getId().toString()
+                USER_ID, user.getId().toString()
         );
         return Jwts.builder()
                 .setClaims(claims)
@@ -85,7 +88,7 @@ public class JwtService {
      */
     public UUID extractUserId(String token) {
         Claims claims = validateAndExtractClaims(token);
-        String userIdStr = claims.get("userId", String.class);
+        String userIdStr = claims.get(USER_ID, String.class);
         return UUID.fromString(userIdStr);
     }
 
@@ -94,7 +97,7 @@ public class JwtService {
      */
     public String extractEmail(String token) {
         Claims claims = validateAndExtractClaims(token);
-        return claims.get("email", String.class);
+        return claims.get(EMAIL, String.class);
     }
 
     /**

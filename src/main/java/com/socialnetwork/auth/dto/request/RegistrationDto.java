@@ -14,8 +14,7 @@ import lombok.*;
 public class RegistrationDto {
     @Schema(
             description = "Email адрес для регистрации",
-            example = "newuser@example.com",
-            required = true
+            example = "newuser@example.com"
     )
     @Email(message = "Некорректный email")
     @NotBlank(message = "Email обязателен")
@@ -23,16 +22,14 @@ public class RegistrationDto {
 
     @Schema(
             description = "Имя пользователя",
-            example = "Иван",
-            required = true
+            example = "Иван"
     )
     @NotBlank(message = "Имя обязательно")
     private String firstName;
 
     @Schema(
             description = "Фамилия пользователя",
-            example = "Иванов",
-            required = true
+            example = "Иванов"
     )
     @NotBlank(message = "Фамилия обязательно")
     private String lastName;
@@ -40,7 +37,6 @@ public class RegistrationDto {
     @Schema(
             description = "Пароль (минимум 6 символов)",
             example = "securePassword123",
-            required = true,
             minLength = 6
     )
     @NotBlank(message = "Пароль обязателен")
@@ -49,16 +45,14 @@ public class RegistrationDto {
 
     @Schema(
             description = "Подтверждение пароля (должен совпадать с password1)",
-            example = "securePassword123",
-            required = true
+            example = "securePassword123"
     )
     @NotBlank(message = "Подтверждение пароля обязательно")
     private String password2;
 
     @Schema(
             description = "Код капчи, полученный из /captcha эндпоинта",
-            example = "ABC123",
-            required = true
+            example = "ABC123"
     )
     @NotBlank(message = "Код капчи обязательно")
     private String captchaCode;

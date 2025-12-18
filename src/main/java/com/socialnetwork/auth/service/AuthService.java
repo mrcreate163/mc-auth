@@ -263,7 +263,7 @@ public class AuthService {
                         .orElseThrow(() -> new InvalidTokenException("Invalid token"));
 
         //Проверки
-        if (resetToken.getIsUsed() ) {
+        if (Boolean.TRUE.equals(resetToken.getIsUsed())) {
             throw new InvalidTokenException("Token is already used");
         }
         if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
@@ -334,7 +334,7 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidTokenException("Invalid token"));
 
         // Проверки
-        if (changeToken.getIsUsed()) {
+        if (Boolean.TRUE.equals(changeToken.getIsUsed())) {
             throw new InvalidTokenException("Token is already used");
         }
         if (changeToken.getExpiresAt().isBefore(LocalDateTime.now())) {

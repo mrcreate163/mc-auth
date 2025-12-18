@@ -14,8 +14,7 @@ public class RefreshTokenRequest {
 
     @Schema(
             description = "Refresh токен для обновления access токена",
-            example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAifQ...",
-            required = true
+            example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAifQ..."
     )
     @NotBlank(message = "Refresh токен не может быть пустым")
     private String refreshToken;

@@ -52,10 +52,10 @@ class CaptchaServiceTest {
         // Verify Redis was called with correct prefix and TTL
         verify(redisTemplate).opsForValue();
         verify(valueOperations).set(
-            eq("captcha:" + result.getSecret()),
-            eq("1"),
-            eq(300L),
-            eq(TimeUnit.SECONDS)
+            "captcha:" + result.getSecret(),
+            "1",
+            300L,
+            TimeUnit.SECONDS
         );
     }
 

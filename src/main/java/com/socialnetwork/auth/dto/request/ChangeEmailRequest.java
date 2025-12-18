@@ -15,8 +15,7 @@ public class ChangeEmailRequest {
 
     @Schema(
             description = "Новый email адрес пользователя",
-            example = "newemail@example.com",
-            required = true
+            example = "newemail@example.com"
     )
     @Email(message = "Некорректный формат нового email")
     @NotBlank(message = "Новый email не может быть пустым")
