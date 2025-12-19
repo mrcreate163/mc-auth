@@ -224,8 +224,14 @@ deploy-dev:
         -e JAVA_OPTS="-Xms128m -Xmx256m" \
         -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
         $DEPLOY_IMAGE
-      echo "🧹 Cleaning up old images..."
+      echo "🧹 Cleaning up dangling images..."
       docker image prune -f
+      echo "🧹 Removing old mc-auth images, keep last 2..."
+      docker images "mlz777/mc-auth" --format "{{.ID}} {{.CreatedAt}}" \
+        | sort -k2,3 -r \
+        | tail -n +3 \
+        | awk '{print $1}' \
+        | xargs -r docker rmi || true
       echo "✅ DEV деплой завершён!"
       docker ps | grep mc-auth
       ENDSSH
@@ -274,8 +280,14 @@ deploy-prod:
         -e JAVA_OPTS="-Xms128m -Xmx256m" \
         -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
         $DEPLOY_IMAGE
-      echo "🧹 Cleaning up old images..."
+      echo "🧹 Cleaning up dangling images..."
       docker image prune -f
+      echo "🧹 Removing old mc-auth images, keep last 2..."
+      docker images "mlz777/mc-auth" --format "{{.ID}} {{.CreatedAt}}" \
+        | sort -k2,3 -r \
+        | tail -n +3 \
+        | awk '{print $1}' \
+        | xargs -r docker rmi || true
       echo "✅ Production деплой завершён!"
       docker ps | grep mc-auth
       ENDSSH
