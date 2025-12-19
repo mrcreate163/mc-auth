@@ -22,9 +22,6 @@ import java.util.UUID;
 @Slf4j
 public class JwtService {
 
-    private final static String USER_ID = "userId";
-    private final static String EMAIL = "email";
-
     @Value("${jwt.secret}")
     private String secret;
 
@@ -33,6 +30,9 @@ public class JwtService {
 
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration; // 30 дней
+
+    private static final  String USER_ID = "userId";
+    private static final  String EMAIL = "email";
 
     /**
      * Генерация access токена (короткий промежуток, 15 минут)
