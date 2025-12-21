@@ -80,8 +80,8 @@ public class AuthService {
         UserRegisteredEvent event = UserRegisteredEvent.builder()
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
-                .firstname(dto.getFirstName())
-                .lastname(dto.getLastName())
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
                 .registeredAt(savedUser.getCreatedAt())
                 .build();
 
@@ -166,7 +166,7 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidTokenException("Invalid refresh token"));
 
         // 2. Проверить, не отозван ли токен
-        if (refreshToken.getIsRevoked()) {
+        if (Boolean.TRUE.equals(refreshToken.getIsRevoked())) {
             throw new InvalidCredentialsException("Refresh token is revoked");
         }
 
