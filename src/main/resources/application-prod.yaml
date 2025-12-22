@@ -64,10 +64,10 @@ server:
 # Оптимизация логирования
 logging:
   level:
-    root: INFO
-    com.socialnetwork.auth: INFO    # Уменьшаем уровень логирования
+    root: DEBUG
+    com.socialnetwork.auth: DEBUG    # Уменьшаем уровень логирования
     org.springframework: WARN
-    org.springframework.security: WARN
+    org.springframework.security: DEBUG
     org.hibernate: WARN
     org.apache.kafka: WARN
   pattern:
