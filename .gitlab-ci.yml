@@ -220,7 +220,6 @@ deploy-dev:
         --memory=384m \
         --memory-reservation=256m \
         --cpus=1.0 \
-#        -e SPRING_PROFILES_ACTIVE=prod \
         -e JAVA_OPTS="-Xms128m -Xmx256m" \
         -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
         $DEPLOY_IMAGE
@@ -276,7 +275,6 @@ deploy-prod:
         --memory=384m \
         --memory-reservation=256m \
         --cpus=1.0 \
-#        -e SPRING_PROFILES_ACTIVE=prod \
         -e JAVA_OPTS="-Xms128m -Xmx256m" \
         -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
         $DEPLOY_IMAGE
