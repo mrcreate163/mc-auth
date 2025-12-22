@@ -7,6 +7,8 @@ import com.socialnetwork.auth.dto.response.TokenResponse;
 import com.socialnetwork.auth.dto.response.ValidationResponse;
 import com.socialnetwork.auth.service.AuthService;
 import com.socialnetwork.auth.service.CaptchaService;
+import com.socialnetwork.auth.service.JwtService;
+import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,6 +32,7 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
     private final CaptchaService captchaService;
 
     /**
@@ -185,18 +188,25 @@ public class AuthController {
     })
     @PostMapping("/logout")
     public ResponseEntity<String> logout(
-            @Parameter(description = "ID пользователя", required = true, example = "550e8400-e29b-41d4-a716-446655440000")
-            @RequestHeader("X-User-Id") String userIdStr,
+//            @Parameter(description = "ID пользователя", required = false, example = "550e8400-e29b-41d4-a716-446655440000")
+//            @RequestHeader("X-User-Id") String userIdStr,
             @Parameter(description = "JWT токен в формате Bearer (опционально). Если указан, будет добавлен в blacklist", 
                       example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        log.info("Logout endpoint called for user: {}", userIdStr);
-        UUID userId = UUID.fromString(userIdStr);
-        
-        // Извлечь access token из заголовка Authorization
+        UUID userId = null;
         String accessToken = null;
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             accessToken = authHeader.substring(7);
+
+            try {
+                Claims claims = jwtService.validateAndExtractClaims(accessToken);
+                userId = UUID.fromString(claims.get("userId", String.class));
+                log.info("userId exctracted from token: {}", userId);
+            }catch (Exception e) {
+                log.error("Failed to validate user id from token: {}", accessToken);
+                return ResponseEntity.badRequest().body("Invalid token or missing user identification");
+            }
         }
         
         String result = authService.logout(userId, accessToken);
