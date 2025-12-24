@@ -223,6 +223,9 @@ deploy-dev:
         -e SPRING_PROFILES_ACTIVE=prod \
         -e JAVA_OPTS="-Xms128m -Xmx256m" \
         -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
+        -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+        -e REDIS_PASSWORD=$REDIS_PASSWORD \
+        -e JWT_SECRET=$JWT_SECRET \
         $DEPLOY_IMAGE
       echo "🧹 Cleaning up dangling images..."
       docker image prune -f

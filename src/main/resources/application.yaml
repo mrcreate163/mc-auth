@@ -28,7 +28,7 @@ spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/auth_db
     username: postgres
-    password: postgres
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -57,6 +57,7 @@ spring:
       host: redis
       port: 6379
       timeout: 60000
+      password: ${REDIS_PASSWORD}
 
   mail:
     host: mailhog
@@ -71,7 +72,7 @@ spring:
             enable: false
 
 jwt:
-  secret: bXlTZWNyZXRLZXlGb3JKV1RUb2tlbkdlbmVyYXRpb25NaW5pbXVtMjU2Qml0c0xvbmdCYXNlNjRFbmNvZGVkPT0=
+  secret: ${JWT_SECRET}
   access-token-expiration: 900000      # 15 минут
   refresh-token-expiration: 2592000000 # 30 дней
 
