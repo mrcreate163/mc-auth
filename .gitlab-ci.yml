@@ -203,6 +203,7 @@ deploy-dev:
   script:
     - echo "🚀 Деплой на DEV сервер..."
     - echo "Deploying image - $DEPLOY_IMAGE"
+    - echo "DEBUG - POSTGRES_PASSWORD value: ${POSTGRES_PASSWORD:0:10}..."  # Показать первые 10 символов
     - |
       ssh $DEV_SERVER_USER@$DEV_SERVER_HOST << ENDSSH
       set -e
