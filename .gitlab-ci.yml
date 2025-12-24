@@ -257,6 +257,7 @@ deploy-prod:
   script:
     - echo "🚀 Деплой на PRODUCTION сервер..."
     - echo "Deploying image - $DEPLOY_IMAGE"
+    - echo "DEBUG - POSTGRES_PASSWORD is set:" && test -n "$POSTGRES_PASSWORD" && echo "YES (length ${#POSTGRES_PASSWORD})" || echo "NO - VARIABLE IS EMPTY!"
     - |
       ssh $DEV_SERVER_USER@$DEV_SERVER_HOST << ENDSSH
       set -e
@@ -277,6 +278,9 @@ deploy-prod:
         -e SPRING_PROFILES_ACTIVE=prod \
         -e JAVA_OPTS="-Xms128m -Xmx256m" \
         -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
+        -e POSTGRES_PASSWORD='$POSTGRES_PASSWORD' \
+        -e REDIS_PASSWORD='$REDIS_PASSWORD' \
+        -e JWT_SECRET='$JWT_SECRET' \
         $DEPLOY_IMAGE
       echo "🧹 Cleaning up dangling images..."
       docker image prune -f
