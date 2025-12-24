@@ -61,58 +61,78 @@ server:
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
     min-response-size: 1024
 
-# Оптимизация логирования
+# Оптимизация логирования для разработки на prod-сервере
 logging:
   level:
-    root: INFO  # Меняем с DEBUG на INFO!
+    # Базовый уровень - только INFO и выше
+    root: INFO
 
-    # Твой код - оставляем DEBUG для отладки
+    # ===== ТВОЙ КОД - оставляем DEBUG =====
     com.socialnetwork.auth: DEBUG
 
-    # Spring - только важное
+    # ===== SPRING FRAMEWORK =====
     org.springframework: INFO
-    org.springframework.security: INFO  # Было DEBUG - убираем SecurityContext spam
+    org.springframework.boot: INFO
+    org.springframework.security: INFO
+
+    # Spring Web - КЛЮЧЕВОЕ! Убирает мусор от Prometheus
     org.springframework.web: INFO
     org.springframework.web.servlet: INFO
+    org.springframework.web.servlet.mvc.method.annotation: WARN
+
+    # Spring Data & Transactions
+    org.springframework.data: INFO
     org.springframework.data.redis: WARN
     org.springframework.transaction: INFO
 
-    # Hibernate - отключаем детали
-    org.hibernate: WARN
-    org.hibernate.SQL: INFO  # SQL запросы оставляем видимыми
-    org.hibernate.type: WARN  # Убираем TRACE биндинг параметров
+    # Spring Cloud & Eureka
+    org.springframework.cloud: INFO
+    org.springframework.cloud.netflix.eureka: INFO
 
-    # Apache HttpClient - КРИТИЧНО! Главный источник мусора
+    # Actuator - убираем шум
+    org.springframework.boot.actuate: WARN
+    org.springframework.boot.actuate.endpoint: WARN
+
+    # ===== HIBERNATE / JPA =====
+    org.hibernate: WARN
+    org.hibernate.SQL: INFO
+    org.hibernate.type: WARN
+    org.hibernate.engine: WARN
+
+    # ===== APACHE HTTP CLIENT (Eureka использует) =====
     org.apache.http: WARN
     org.apache.http.wire: ERROR
     org.apache.http.headers: ERROR
-    org.apache.http.impl.conn: WARN
-    org.apache.http.impl.client: WARN
+    org.apache.http.impl: WARN
 
-    # Lettuce Redis - убираем весь мусор
+    # ===== LETTUCE REDIS CLIENT =====
     io.lettuce: WARN
     io.lettuce.core: WARN
     io.lettuce.core.protocol: ERROR
 
-    # Netty - убираем системные сообщения
+    # ===== NETTY (используется Lettuce и Kafka) =====
     io.netty: WARN
     io.netty.util: ERROR
     io.netty.channel: WARN
     io.netty.buffer: ERROR
     io.netty.handler: WARN
 
-    # Kafka
+    # ===== KAFKA =====
     org.apache.kafka: WARN
     org.springframework.kafka: INFO
 
-    # Eureka/Netflix - убираем детали соединений
+    # ===== NETFLIX EUREKA =====
     com.netflix.discovery: INFO
-    org.springframework.cloud.netflix.eureka: INFO
+    com.netflix.eureka: INFO
 
-    # HikariCP - только важное
+    # ===== HIKARICP =====
     com.zaxxer.hikari: WARN
     com.zaxxer.hikari.HikariConfig: INFO
 
+    # ===== LIQUIBASE =====
+    liquibase: INFO
+
+  # Формат логов - простой и читаемый
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{40} - %msg%n"
 
