@@ -203,16 +203,16 @@ deploy-dev:
   script:
     - echo "🚀 Деплой на DEV сервер..."
     - echo "Deploying image - $DEPLOY_IMAGE"
-    - echo "DEBUG - POSTGRES_PASSWORD value: ${POSTGRES_PASSWORD:0:10}..."  # Показать первые 10 символов
+    - echo "DEBUG - POSTGRES_PASSWORD is set:" && test -n "$POSTGRES_PASSWORD" && echo "YES (length ${#POSTGRES_PASSWORD})" || echo "NO - VARIABLE IS EMPTY!"
     - |
-      ssh $DEV_SERVER_USER@$DEV_SERVER_HOST << ENDSSH
+      ssh $DEV_SERVER_USER@$DEV_SERVER_HOST << 'ENDSSH'
       set -e
-      echo "📥 Pulling image: $DEPLOY_IMAGE"
-      docker pull $DEPLOY_IMAGE
+      echo "📥 Pulling image: '"$DEPLOY_IMAGE"'"
+      docker pull "$DEPLOY_IMAGE"
       echo "🛑 Stopping old container..."
       docker stop mc-auth || true
       docker rm mc-auth || true
-      echo "🚀 Starting new container with memory optimization..."
+      echo "🚀 Starting new container..."
       docker run -d \
         --name mc-auth \
         --restart always \
@@ -224,20 +224,14 @@ deploy-dev:
         -e SPRING_PROFILES_ACTIVE=prod \
         -e JAVA_OPTS="-Xms128m -Xmx256m" \
         -e EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka \
-        -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-        -e REDIS_PASSWORD=$REDIS_PASSWORD \
-        -e JWT_SECRET=$JWT_SECRET \
-        $DEPLOY_IMAGE
-      echo "🧹 Cleaning up dangling images..."
-      docker image prune -f
-      echo "🧹 Removing old mc-auth images, keep last 2..."
-      docker images "mlz777/mc-auth" --format "{{.ID}} {{.CreatedAt}}" \
-        | sort -k2,3 -r \
-        | tail -n +3 \
-        | awk '{print $1}' \
-        | xargs -r docker rmi || true
-      echo "✅ DEV деплой завершён!"
+        -e POSTGRES_PASSWORD='$POSTGRES_PASSWORD' \
+        -e REDIS_PASSWORD='$REDIS_PASSWORD' \
+        -e JWT_SECRET='$JWT_SECRET' \
+        "$DEPLOY_IMAGE"
+      echo "✅ Container started!"
       docker ps | grep mc-auth
+      echo "🔍 Checking env variables in container..."
+      docker exec mc-auth env | grep -E "POSTGRES|REDIS|JWT" || echo "No variables found!"
       ENDSSH
   environment:
     name: development
