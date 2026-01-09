@@ -316,7 +316,6 @@ public class AuthController {
             @Parameter(description = "Новый email адрес", required = true)
             @Valid @RequestBody ChangeEmailRequest request) {
         UUID userId = claimsUserId(authHeader);
-        String accessToken = null;
 
         log.info("Change email endpoint called to: {} for user: {}", request.getNewEmail(), userId);
         String result = authService.sendChangeEmailLink(userId, request);
