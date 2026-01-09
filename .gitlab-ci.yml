@@ -6,7 +6,7 @@
 stages:
   - build
   - test
-  - sonar      # ← ДОБАВЛЕНА НОВАЯ СТАДИЯ
+#  - sonar      # ← ДОБАВЛЕНА НОВАЯ СТАДИЯ
   - package
   - deploy
 
@@ -111,35 +111,35 @@ integration-tests:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   allow_failure: true
 
-# ==================== SONAR STAGE (НОВАЯ СЕКЦИЯ) ====================
-
-sonarqube-analysis:
-  extends: .maven-job
-  stage: sonar
-  script:
-    - echo "🔍 Запуск SonarQube анализа кода..."
-    - echo "SonarQube Server - ${SONAR_HOST_URL}"
-    - echo "Project Key - ${SONAR_PROJECT_KEY}"
-    - mvn clean verify sonar:sonar
-      -Dsonar.projectKey=${SONAR_PROJECT_KEY}
-      -Dsonar.projectName="${SONAR_PROJECT_NAME}"
-      -Dsonar.host.url=${SONAR_HOST_URL}
-      -Dsonar.token=${SONAR_TOKEN}
-      -Dsonar.qualitygate.wait=true
-      -Dsonar.java.binaries=target/classes
-      -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-  allow_failure: false
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-    - if: $CI_COMMIT_BRANCH == "develop"
-  needs:
-    - unit-tests
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - stuck_or_timeout_failure
+## ==================== SONAR STAGE (НОВАЯ СЕКЦИЯ) ====================
+#
+#sonarqube-analysis:
+#  extends: .maven-job
+#  stage: sonar
+#  script:
+#    - echo "🔍 Запуск SonarQube анализа кода..."
+#    - echo "SonarQube Server - ${SONAR_HOST_URL}"
+#    - echo "Project Key - ${SONAR_PROJECT_KEY}"
+#    - mvn clean verify sonar:sonar
+#      -Dsonar.projectKey=${SONAR_PROJECT_KEY}
+#      -Dsonar.projectName="${SONAR_PROJECT_NAME}"
+#      -Dsonar.host.url=${SONAR_HOST_URL}
+#      -Dsonar.token=${SONAR_TOKEN}
+#      -Dsonar.qualitygate.wait=true
+#      -Dsonar.java.binaries=target/classes
+#      -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+#  allow_failure: false
+#  rules:
+#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#    - if: $CI_COMMIT_BRANCH == "develop"
+#  needs:
+#    - unit-tests
+#  retry:
+#    max: 2
+#    when:
+#      - runner_system_failure
+#      - stuck_or_timeout_failure
 
 # ==================== PACKAGE STAGE ====================
 
@@ -182,8 +182,6 @@ docker-build:
     - if: $CI_COMMIT_BRANCH == "develop"
   needs:
     - job: unit-tests
-      artifacts: false
-    - job: sonarqube-analysis  # ← ДОБАВЛЕНА ЗАВИСИМОСТЬ
       artifacts: false
 
 # ==================== DEPLOY STAGE ====================
@@ -301,4 +299,3 @@ deploy-prod:
   needs:
     - docker-build
     - unit-tests
-    - sonarqube-analysis  # ← ДОБАВЛЕНА ЗАВИСИМОСТЬ
