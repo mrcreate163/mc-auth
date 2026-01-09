@@ -41,7 +41,7 @@ public class AuthController {
     @Operation(
             summary = "Регистрация нового пользователя",
             description = "Регистрирует нового пользователя в системе. Требуется валидный email, пароль (минимум 6 символов), " +
-                         "имя, фамилия и правильный код капчи. Пароли должны совпадать."
+                    "имя, фамилия и правильный код капчи. Пароли должны совпадать."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -96,7 +96,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(
             @Parameter(description = "Учетные данные пользователя", required = true)
-            @Valid @RequestBody AuthenticateRq  dto) {
+            @Valid @RequestBody AuthenticateRq dto) {
         log.info("Login endpoint called for email: {}", dto.getEmail());
         TokenResponse tokens = authService.login(dto);
         return ResponseEntity.ok(tokens);
@@ -172,7 +172,7 @@ public class AuthController {
     @Operation(
             summary = "Выход из системы",
             description = "Завершает сеанс пользователя, инвалидирует все refresh токены. " +
-                         "Опционально принимает access токен для добавления в черный список (blacklist) до истечения срока его действия."
+                    "Опционально принимает access токен для добавления в черный список (blacklist) до истечения срока его действия."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -190,25 +190,16 @@ public class AuthController {
     public ResponseEntity<String> logout(
 //            @Parameter(description = "ID пользователя", required = false, example = "550e8400-e29b-41d4-a716-446655440000")
 //            @RequestHeader("X-User-Id") String userIdStr,
-            @Parameter(description = "JWT токен в формате Bearer (опционально). Если указан, будет добавлен в blacklist", 
-                      example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+            @Parameter(description = "JWT токен в формате Bearer (опционально). Если указан, будет добавлен в blacklist",
+                    example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        UUID userId = null;
+        UUID userId = claimsUserId(authHeader);
         String accessToken = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             accessToken = authHeader.substring(7);
-
-            try {
-                Claims claims = jwtService.validateAndExtractClaims(accessToken);
-                userId = UUID.fromString(claims.get("userId", String.class));
-                log.info("userId exctracted from token: {}", userId);
-            }catch (Exception e) {
-                log.error("Failed to validate user id from token: {}", accessToken);
-                return ResponseEntity.badRequest().body("Invalid token or missing user identification");
-            }
         }
-        
+
         String result = authService.logout(userId, accessToken);
         return ResponseEntity.ok(result);
     }
@@ -321,12 +312,13 @@ public class AuthController {
     })
     @PostMapping("/change-email-link")
     public ResponseEntity<String> changeEmail(
-            @Parameter(description = "ID пользователя", required = true, example = "550e8400-e29b-41d4-a716-446655440000")
-            @RequestHeader("X-User-Id") String userIdStr,
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Parameter(description = "Новый email адрес", required = true)
             @Valid @RequestBody ChangeEmailRequest request) {
-        log.info("Change email endpoint called to: {} for user: {}", request.getNewEmail(), userIdStr);
-        UUID userId = UUID.fromString(userIdStr);
+        UUID userId = claimsUserId(authHeader);
+        String accessToken = null;
+
+        log.info("Change email endpoint called to: {} for user: {}", request.getNewEmail(), userId);
         String result = authService.sendChangeEmailLink(userId, request);
         return ResponseEntity.ok(result);
     }
@@ -360,5 +352,22 @@ public class AuthController {
                 .build();
         String result = authService.confirmEmailChange(request);
         return ResponseEntity.ok(result);
+    }
+
+    private UUID claimsUserId(String authHeader) {
+        UUID userId = null;
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = authHeader.substring(7);
+
+            try {
+                Claims claims = jwtService.validateAndExtractClaims(accessToken);
+                userId = UUID.fromString(claims.get("userId", String.class));
+                log.info("userId exctracted from token: {}", userId);
+            } catch (Exception e) {
+                log.error("Failed to validate user id from token: {}", accessToken);
+            }
+        }
+        return userId;
     }
 }
