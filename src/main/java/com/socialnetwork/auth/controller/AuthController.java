@@ -61,12 +61,11 @@ public class AuthController {
             )
     })
     @PostMapping("/register")
-    public ResponseEntity<String> register(
+    public String register(
             @Parameter(description = "Данные для регистрации пользователя", required = true)
             @Valid @RequestBody RegistrationDto dto) {
         log.info("Register endpoint called for email: {}", dto.getEmail());
-        String result = authService.register(dto);
-        return ResponseEntity.ok(result);
+        return authService.register(dto);
     }
 
     /**
@@ -94,12 +93,11 @@ public class AuthController {
             )
     })
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(
+    public TokenResponse login(
             @Parameter(description = "Учетные данные пользователя", required = true)
             @Valid @RequestBody AuthenticateRq dto) {
         log.info("Login endpoint called for email: {}", dto.getEmail());
-        TokenResponse tokens = authService.login(dto);
-        return ResponseEntity.ok(tokens);
+        return authService.login(dto);
     }
 
     /**
@@ -122,7 +120,7 @@ public class AuthController {
             )
     })
     @GetMapping("/validate")
-    public ResponseEntity<Boolean> validateToken(
+    public Boolean validateToken(
             @Parameter(description = "JWT токен для проверки", required = true, example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
             @RequestParam("token") String token) {
         log.info("Validate token endpoint called");
@@ -130,7 +128,7 @@ public class AuthController {
                 .token(token)
                 .build();
         ValidationResponse response = authService.validateToken(dto);
-        return ResponseEntity.ok(response.isValid());
+        return response.isValid();
     }
 
     /**
@@ -158,12 +156,11 @@ public class AuthController {
             )
     })
     @PostMapping("/refresh")
-    public ResponseEntity<TokenResponse> refreshToken(
+    public TokenResponse refreshToken(
             @Parameter(description = "Refresh токен для обновления", required = true)
             @Valid @RequestBody RefreshTokenRequest dto) {
         log.info("Refresh token endpoint called");
-        TokenResponse tokens = authService.refreshAccessToken(dto);
-        return ResponseEntity.ok(tokens);
+        return authService.refreshAccessToken(dto);
     }
 
     /**
@@ -187,9 +184,7 @@ public class AuthController {
             )
     })
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(
-//            @Parameter(description = "ID пользователя", required = false, example = "550e8400-e29b-41d4-a716-446655440000")
-//            @RequestHeader("X-User-Id") String userIdStr,
+    public String logout(
             @Parameter(description = "JWT токен в формате Bearer (опционально). Если указан, будет добавлен в blacklist",
                     example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
@@ -199,9 +194,7 @@ public class AuthController {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             accessToken = authHeader.substring(7);
         }
-
-        String result = authService.logout(userId, accessToken);
-        return ResponseEntity.ok(result);
+        return authService.logout(userId, accessToken);
     }
 
     /**
@@ -219,10 +212,9 @@ public class AuthController {
             )
     })
     @GetMapping("/captcha")
-    public ResponseEntity<CaptchaDto> generateCaptcha() {
+    public CaptchaDto generateCaptcha() {
         log.debug("Captcha generation endpoint called");
-        CaptchaDto captcha = captchaService.generateCaptcha();
-        return ResponseEntity.ok(captcha);
+        return captchaService.generateCaptcha();
     }
 
     /**
@@ -245,12 +237,11 @@ public class AuthController {
             )
     })
     @PostMapping("/password/recovery/")
-    public ResponseEntity<String> recoverPassword(
+    public String recoverPassword(
             @Parameter(description = "Email для восстановления пароля", required = true)
             @Valid @RequestBody RecoveryPasswordLinkRq request) {
         log.info("Password recovery endpoint called for email: {}", request.getEmail());
-        String result = authService.sendPasswordRecoveryLink(request);
-        return ResponseEntity.ok(result);
+        return authService.sendPasswordRecoveryLink(request);
     }
 
     /**
@@ -278,12 +269,11 @@ public class AuthController {
             )
     })
     @PostMapping("/change-password-link")
-    public ResponseEntity<String> changePassword(
+    public String changePassword(
             @Parameter(description = "Данные для смены пароля", required = true)
             @Valid @RequestBody ChangePasswordRequest request) {
         log.info("Change password endpoint called");
-        String result = authService.changePassword(request);
-        return ResponseEntity.ok(result);
+        return authService.changePassword(request);
     }
 
     /**
@@ -311,15 +301,13 @@ public class AuthController {
             )
     })
     @PostMapping("/change-email-link")
-    public ResponseEntity<String> changeEmail(
+    public String changeEmail(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Parameter(description = "Новый email адрес", required = true)
             @Valid @RequestBody ChangeEmailRequest request) {
         UUID userId = claimsUserId(authHeader);
-
         log.info("Change email endpoint called to: {} for user: {}", request.getNewEmail(), userId);
-        String result = authService.sendChangeEmailLink(userId, request);
-        return ResponseEntity.ok(result);
+        return authService.sendChangeEmailLink(userId, request);
     }
 
     /**
@@ -342,15 +330,14 @@ public class AuthController {
             )
     })
     @GetMapping("/confirm-email-change")
-    public ResponseEntity<String> confirmEmailChange(
+    public String confirmEmailChange(
             @Parameter(description = "Токен подтверждения из письма", required = true, example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
             @RequestParam("token") String token) {
         log.info("Confirm email change endpoint called");
         ConfirmEmailChangeRequest request = ConfirmEmailChangeRequest.builder()
                 .token(token)
                 .build();
-        String result = authService.confirmEmailChange(request);
-        return ResponseEntity.ok(result);
+        return authService.confirmEmailChange(request);
     }
 
     private UUID claimsUserId(String authHeader) {
